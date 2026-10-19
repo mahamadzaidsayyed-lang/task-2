@@ -1,0 +1,36 @@
+"""Generate a simulated (synthetic) hospital patient dataset for statistical analysis.
+No real patient data is used. Realistic relationships are built in so the
+statistical tests have something meaningful to detect."""
+import numpy as np
+import pandas as pd
+
+rng = np.random.default_rng(2024)
+N = 200
+
+age = np.clip(rng.normal(56, 15, N), 18, 92).round().astype(int)
+gender = rng.choice(["Male", "Female"], N, p=[0.52, 0.48])
+bmi = np.clip(rng.normal(27 + 0.03 * (age - 56), 4.5), 17, 45).round(1)
+sbp = np.clip(92 + 0.45 * age + 0.9 * bmi + rng.normal(0, 10, N), 90, 200).round().astype(int)
+chol = np.clip(rng.normal(170 + 1.2 * (bmi - 27) + 0.35 * (age - 56), 28), 110, 320).round().astype(int)
+
+diagnosis = rng.choice(
+    ["Hypertension", "Diabetes", "Heart Failure", "Pneumonia", "Asthma", "Fracture"],
+    N, p=[0.22, 0.20, 0.16, 0.16, 0.14, 0.12])
+
+base_los = {"Hypertension": 4, "Diabetes": 5, "Heart Failure": 8, "Pneumonia": 7, "Asthma": 3, "Fracture": 6}
+los = np.array([max(1, round(rng.gamma(4, base_los[d] / 4) + 0.04 * (a - 56)))
+                for d, a in zip(diagnosis, age)])
+
+risk = {"Hypertension": -1.6, "Diabetes": -1.0, "Heart Failure": 0.1, "Pneumonia": -0.9,
+        "Asthma": -1.8, "Fracture": -1.7}
+logit = np.array([risk[d] for d in diagnosis]) + 0.04 * (age - 56) + 0.08 * (los - 5)
+readmit = (rng.random(N) < 1 / (1 + np.exp(-logit))).astype(int)
+
+df = pd.DataFrame({
+    "PatientID": [f"P{2000 + i}" for i in range(N)],
+    "Age": age, "Gender": gender, "BMI": bmi, "SystolicBP": sbp,
+    "Cholesterol": chol, "Diagnosis": diagnosis, "LengthOfStay": los,
+    "Readmitted": readmit,
+})
+df.to_csv("data/patients_week2.csv", index=False)
+print(f"Wrote data/patients_week2.csv with {len(df)} rows")
