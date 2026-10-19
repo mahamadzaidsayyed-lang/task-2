@@ -1,0 +1,131 @@
+"""Statistical analysis and visualization of the simulated patient dataset.
+
+Run:  python analysis.py
+Input:  data/patients_week2.csv
+Output: charts/*.png, results.json
+"""
+import json
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from scipy import stats
+
+df = pd.read_csv("data/patients_week2.csv")
+res = {"n": int(len(df))}
+COLORS = ["#1F3864", "#2E75B6", "#ED7D31", "#70AD47", "#7F7F7F", "#C00000"]
+plt.rcParams.update({"font.size": 11, "axes.spines.top": False, "axes.spines.right": False})
+
+# ---------------------------------------------------------------- 1. Descriptive
+num = ["Age", "BMI", "SystolicBP", "Cholesterol", "LengthOfStay"]
+desc = df[num].describe().T
+desc["median"] = df[num].median()
+desc["skew"] = df[num].skew()
+res["descriptive"] = {c: {k: round(float(desc.loc[c, k]), 2)
+                          for k in ["mean", "std", "min", "25%", "median", "75%", "max", "skew"]} for c in num}
+res["readmission_rate"] = round(float(df["Readmitted"].mean()) * 100, 1)
+res["gender_counts"] = df["Gender"].value_counts().to_dict()
+
+# ---------------------------------------------------------------- 2. Normality
+sh = stats.shapiro(df["SystolicBP"])
+res["shapiro_sbp"] = {"W": round(float(sh.statistic), 3), "p": round(float(sh.pvalue), 4)}
+sh2 = stats.shapiro(df["LengthOfStay"])
+res["shapiro_los"] = {"W": round(float(sh2.statistic), 3), "p": round(float(sh2.pvalue), 4)}
+
+# ---------------------------------------------------------------- 3. Correlation
+r, p = stats.pearsonr(df["BMI"], df["SystolicBP"])
+res["pearson_bmi_sbp"] = {"r": round(float(r), 3), "p": float(p)}
+rs, ps = stats.spearmanr(df["Age"], df["LengthOfStay"])
+res["spearman_age_los"] = {"rho": round(float(rs), 3), "p": round(float(ps), 4)}
+
+# ---------------------------------------------------------------- 4. Welch t-test
+a = df.loc[df.Readmitted == 1, "LengthOfStay"]
+b = df.loc[df.Readmitted == 0, "LengthOfStay"]
+t = stats.ttest_ind(a, b, equal_var=False)
+res["ttest_los_readmit"] = {"mean_readmitted": round(float(a.mean()), 2), "mean_not": round(float(b.mean()), 2),
+                            "n_readmitted": int(len(a)), "n_not": int(len(b)),
+                            "t": round(float(t.statistic), 3), "p": round(float(t.pvalue), 4)}
+mw = stats.mannwhitneyu(a, b)
+res["mannwhitney_los_readmit_p"] = round(float(mw.pvalue), 4)
+
+# ---------------------------------------------------------------- 5. Chi-square
+ct = pd.crosstab(df["Diagnosis"], df["Readmitted"])
+chi2, pchi, dof, _ = stats.chi2_contingency(ct)
+res["chi2_diag_readmit"] = {"chi2": round(float(chi2), 3), "dof": int(dof), "p": round(float(pchi), 4)}
+rate = (df.groupby("Diagnosis")["Readmitted"].mean() * 100).round(1).sort_values(ascending=False)
+res["readmit_rate_by_diagnosis"] = rate.to_dict()
+
+# ---------------------------------------------------------------- 6. ANOVA
+groups = [g["LengthOfStay"].values for _, g in df.groupby("Diagnosis")]
+f, pf = stats.f_oneway(*groups)
+res["anova_los_diag"] = {"F": round(float(f), 3), "p": float(pf)}
+res["mean_los_by_diagnosis"] = df.groupby("Diagnosis")["LengthOfStay"].mean().round(2).sort_values(ascending=False).to_dict()
+
+# ---------------------------------------------------------------- 7. Regression
+lr = stats.linregress(df["Age"], df["SystolicBP"])
+res["regression_age_sbp"] = {"slope": round(float(lr.slope), 3), "intercept": round(float(lr.intercept), 2),
+                             "r2": round(float(lr.rvalue ** 2), 3), "p": float(lr.pvalue)}
+
+# ================================================================= CHARTS
+# Chart 1: histogram of systolic BP
+fig, ax = plt.subplots(figsize=(7, 4.2))
+ax.hist(df["SystolicBP"], bins=15, color=COLORS[1], edgecolor="white")
+ax.axvline(df["SystolicBP"].mean(), color=COLORS[2], ls="--", lw=2, label=f"Mean = {df['SystolicBP'].mean():.1f}")
+ax.axvline(140, color=COLORS[5], ls=":", lw=2, label="Hypertension threshold (140)")
+ax.set(title="Distribution of Systolic Blood Pressure", xlabel="Systolic BP (mmHg)", ylabel="Number of patients")
+ax.legend(frameon=False)
+fig.tight_layout(); fig.savefig("charts/1_sbp_histogram.png", dpi=150); plt.close(fig)
+
+# Chart 2: box plot of LOS by diagnosis
+order = df.groupby("Diagnosis")["LengthOfStay"].median().sort_values(ascending=False).index
+fig, ax = plt.subplots(figsize=(7.5, 4.4))
+bp = ax.boxplot([df.loc[df.Diagnosis == d, "LengthOfStay"] for d in order], tick_labels=order, patch_artist=True,
+                medianprops=dict(color="black", lw=2))
+for patch in bp["boxes"]:
+    patch.set(facecolor=COLORS[1], alpha=0.75)
+ax.set(title="Length of Stay by Diagnosis", ylabel="Length of stay (days)")
+plt.setp(ax.get_xticklabels(), rotation=20, ha="right")
+fig.tight_layout(); fig.savefig("charts/2_los_by_diagnosis_boxplot.png", dpi=150); plt.close(fig)
+
+# Chart 3: scatter BMI vs SBP with trend line
+fig, ax = plt.subplots(figsize=(7, 4.4))
+ax.scatter(df["BMI"], df["SystolicBP"], color=COLORS[1], alpha=0.65, edgecolor="white")
+m, c = np.polyfit(df["BMI"], df["SystolicBP"], 1)
+xs = np.linspace(df["BMI"].min(), df["BMI"].max(), 50)
+ax.plot(xs, m * xs + c, color=COLORS[2], lw=2.5, label=f"Trend line (r = {r:.2f})")
+ax.set(title="BMI vs Systolic Blood Pressure", xlabel="BMI (kg/m²)", ylabel="Systolic BP (mmHg)")
+ax.legend(frameon=False)
+fig.tight_layout(); fig.savefig("charts/3_bmi_vs_sbp_scatter.png", dpi=150); plt.close(fig)
+
+# Chart 4: readmission rate by diagnosis
+fig, ax = plt.subplots(figsize=(7, 4.2))
+bars = ax.bar(rate.index, rate.values, color=[COLORS[5] if v == rate.max() else COLORS[1] for v in rate.values])
+ax.axhline(res["readmission_rate"], color="black", ls="--", lw=1.2, label=f"Overall rate ({res['readmission_rate']}%)")
+for bar, v in zip(bars, rate.values):
+    ax.text(bar.get_x() + bar.get_width() / 2, v + 0.8, f"{v:.0f}%", ha="center", fontsize=10)
+ax.set(title="Readmission Rate by Diagnosis", ylabel="Readmitted (%)")
+plt.setp(ax.get_xticklabels(), rotation=20, ha="right")
+ax.legend(frameon=False)
+fig.tight_layout(); fig.savefig("charts/4_readmission_by_diagnosis.png", dpi=150); plt.close(fig)
+
+# Chart 5: correlation heatmap
+corr = df[num + ["Readmitted"]].corr()
+fig, ax = plt.subplots(figsize=(6.6, 5.4))
+im = ax.imshow(corr, cmap="RdBu_r", vmin=-1, vmax=1)
+ax.set_xticks(range(len(corr))); ax.set_yticks(range(len(corr)))
+ax.set_xticklabels(corr.columns, rotation=40, ha="right"); ax.set_yticklabels(corr.columns)
+for i in range(len(corr)):
+    for j in range(len(corr)):
+        ax.text(j, i, f"{corr.iloc[i, j]:.2f}", ha="center", va="center", fontsize=9,
+                color="white" if abs(corr.iloc[i, j]) > 0.5 else "black")
+ax.set_title("Correlation Matrix")
+fig.colorbar(im, fraction=0.046)
+fig.tight_layout(); fig.savefig("charts/5_correlation_heatmap.png", dpi=150); plt.close(fig)
+
+res["corr_pairs"] = {f"{i}~{j}": round(float(corr.loc[i, j]), 3)
+                      for i in corr.index for j in corr.columns if i < j}
+
+with open("results.json", "w") as fh:
+    json.dump(res, fh, indent=2)
+print(json.dumps(res, indent=2))
