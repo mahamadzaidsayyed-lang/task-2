@@ -1,0 +1,23 @@
+# Week 2 Task: Statistical Analysis and Visualization (Healthcare)
+
+Statistical analysis of a **simulated** hospital dataset (200 patients, no real patient data).
+
+## Files
+| File | Purpose |
+|---|---|
+| `Statistical_Analysis_Report.docx` | Main deliverable: analytical report 
+| `generate_data_week2.py` | Creates the synthetic dataset |
+| `data/patients_week2.csv` | Simulated data |
+| `analysis.py` | Runs statistics and builds charts |
+| `charts/` | Five PNG visualizations |
+| `results.json` | Test statistics produced by the script |
+
+## Methods
+Descriptive statistics, Shapiro-Wilk, Pearson/Spearman correlation, Welch's t-test, Mann-Whitney U, chi-square, one-way ANOVA, linear regression.
+
+## Run
+```
+pip install pandas numpy scipy matplotlib
+python generate_data_week2.py
+python analysis.py
+```
