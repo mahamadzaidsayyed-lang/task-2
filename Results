@@ -1,0 +1,132 @@
+"n": 200,
+  "descriptive": {
+    "Age": {
+      "mean": 55.5,
+      "std": 14.82,
+      "min": 18.0,
+      "25%": 46.0,
+      "median": 56.0,
+      "75%": 65.0,
+      "max": 92.0,
+      "skew": -0.09
+    },
+    "BMI": {
+      "mean": 27.27,
+      "std": 4.51,
+      "min": 17.0,
+      "25%": 24.4,
+      "median": 27.2,
+      "75%": 30.3,
+      "max": 41.1,
+      "skew": 0.0
+    },
+    "SystolicBP": {
+      "mean": 141.25,
+      "std": 13.79,
+      "min": 105.0,
+      "25%": 131.0,
+      "median": 141.0,
+      "75%": 151.0,
+      "max": 179.0,
+      "skew": 0.05
+    },
+    "Cholesterol": {
+      "mean": 172.93,
+      "std": 30.44,
+      "min": 110.0,
+      "25%": 149.0,
+      "median": 174.5,
+      "75%": 194.0,
+      "max": 257.0,
+      "skew": 0.2
+    },
+    "LengthOfStay": {
+      "mean": 5.6,
+      "std": 3.46,
+      "min": 1.0,
+      "25%": 3.0,
+      "median": 5.0,
+      "75%": 7.0,
+      "max": 18.0,
+      "skew": 0.98
+    }
+  },
+  "readmission_rate": 29.5,
+  "gender_counts": {
+    "Male": 106,
+    "Female": 94
+  },
+  "shapiro_sbp": {
+    "W": 0.994,
+    "p": 0.6625
+  },
+  "shapiro_los": {
+    "W": 0.921,
+    "p": 0.0
+  },
+  "pearson_bmi_sbp": {
+    "r": 0.46,
+    "p": 7.299505948838728e-12
+  },
+  "spearman_age_los": {
+    "rho": 0.129,
+    "p": 0.0698
+  },
+  "ttest_los_readmit": {
+    "mean_readmitted": 7.44,
+    "mean_not": 4.83,
+    "n_readmitted": 59,
+    "n_not": 141,
+    "t": 4.617,
+    "p": 0.0
+  },
+  "mannwhitney_los_readmit_p": 0.0,
+  "chi2_diag_readmit": {
+    "chi2": 36.411,
+    "dof": 5,
+    "p": 0.0
+  },
+  "readmit_rate_by_diagnosis": {
+    "Heart Failure": 65.6,
+    "Pneumonia": 36.6,
+    "Diabetes": 35.3,
+    "Asthma": 14.8,
+    "Hypertension": 14.0,
+    "Fracture": 4.3
+  },
+  "anova_los_diag": {
+    "F": 16.638,
+    "p": 1.1572453713610932e-13
+  },
+  "mean_los_by_diagnosis": {
+    "Heart Failure": 8.75,
+    "Pneumonia": 7.12,
+    "Fracture": 5.74,
+    "Diabetes": 4.62,
+    "Hypertension": 4.07,
+    "Asthma": 3.11
+  },
+  "regression_age_sbp": {
+    "slope": 0.531,
+    "intercept": 111.78,
+    "r2": 0.326,
+    "p": 1.105688014823521e-18
+  },
+  "corr_pairs": {
+    "Age~BMI": 0.217,
+    "Age~SystolicBP": 0.571,
+    "Age~Cholesterol": 0.209,
+    "Age~LengthOfStay": 0.097,
+    "Age~Readmitted": 0.181,
+    "BMI~SystolicBP": 0.46,
+    "BMI~Cholesterol": 0.207,
+    "BMI~LengthOfStay": -0.049,
+    "BMI~Readmitted": 0.022,
+    "Cholesterol~SystolicBP": 0.193,
+    "Cholesterol~LengthOfStay": 0.01,
+    "Cholesterol~Readmitted": 0.221,
+    "LengthOfStay~SystolicBP": 0.04,
+    "LengthOfStay~Readmitted": 0.345,
+    "Readmitted~SystolicBP": 0.183
+  }
+}
